@@ -3,6 +3,8 @@
 #declaring variables
 export hooksdir="$HOME/.git/hooks"
 
+[ -d $hooksdir ] || mkdir $hooksdir
+
 #add setup options here
 case "$1" in
         --debug)
@@ -37,7 +39,6 @@ download_hooks ()
 {
         if [ -d "$hooksdir" ]; then
                 if whiptail --yesno "the hooks directory exits ($hooksdir) - the do you wish to overwrite the contents?" 20 60 ;then
-                        rm -rf $hooksdir
                         echo "cloning hooks repository into the specified location ($hooksdir)"
                         git clone https://github.com/petervanderdoes/git-flow-hooks.git $hooksdir
                         return $?
@@ -72,11 +73,11 @@ if [ $? -ne 0 ]; then
 fi
 
 #2. downloading fresh set of hooks
-download_hooks
-if [ $? -ne 0 ]; then
-    echo "There was a problem with downloading git-hooks"
-    exit 1
-fi
+#download_hooks
+#if [ $? -ne 0 ]; then
+#    echo "There was a problem with downloading git-hooks"
+#    exit 1
+#fi
 
 #3. setting up custom hooks
 setup_custom_hooks
