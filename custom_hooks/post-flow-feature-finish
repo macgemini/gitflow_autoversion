@@ -16,9 +16,54 @@ NAME=$1
 ORIGIN=$2
 BRANCH=$3
 
+###########functions 
+
+get_build_filepath() 
+{
+	local sbt_path=$(find . -type f -name "version.sbt")
+	local mvn_path=$(find . -type f -name "pom.xml")
+	if [ $sbt_path -ne "" ]; then
+		return $sbt_path
+	elif [ $mvn_path -ne "" ]
+		return $mvn_path
+	else 
+		echo "no build file found" 
+		return 1
+	fi
+}
+
+update_version()
+{
+	case "$1" in 
+		*"mvn.xml" ) 
+
+		;;
+		*"version.sbt" ) 
+		        local version_regex="[0-9]+.[0-9]+.[0-9]+-?*"
+			local version=
+		;;
+	esac
+}
+
+
+
+
+###################
+
+
+
 # Implement your script here.
-git fetch $DEVELOP_BRANCH
+git fetch origin $DEVELOP_BRANCH
 git checkout origin/$DEVELOP
 
-
+build_file=$(get_build_filepath) 
+if [ $? -e 1 ]; then
+	echo "FAILURE - Cannot find eiter of build.sbt, pom.xml"
+	echo "Determine if project is configured correctly"
+	echo "Switching back to develop branch"
+	git checkout $DEVELOP_BRANCH
+	exit 1
+else 
+	update_version $build_file
+fi
 exit 0
