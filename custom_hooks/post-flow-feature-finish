@@ -17,5 +17,8 @@ ORIGIN=$2
 BRANCH=$3
 
 # Implement your script here.
+git fetch $DEVELOP_BRANCH
+git checkout origin/$DEVELOP
+
 
 exit 0
