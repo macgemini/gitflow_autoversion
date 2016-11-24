@@ -34,13 +34,24 @@ get_build_filepath()
 
 update_version()
 {
-	case "$1" in 
+	local path=$1
+	case "$path" in 
 		*"mvn.xml" ) 
-
+			local verison=$(mvn -q -Dexec.executable="echo" -Dexec.args='${project.version}' --non-recursive org.codehaus.mojo:exec-maven-plugin:1.3.1:exec 2>/dev/null)
+			local version_regex="[0-9]\+"
+			local version_array=$(( cat $version | grep -o $version_regex ))
+			local major=${array[0]}
+                        local minor="$((${version_array[1]} + 1))"
+                        local patch="0-SNAPSHOT"
+			mvn versions:set -DnewVersion=$major.$minor.$patch
 		;;
 		*"version.sbt" ) 
-		        local version_regex="[0-9]+.[0-9]+.[0-9]+-?*"
-			local version=
+		        local version_regex="[0-9]\+"
+			local version_array=$(( cat $path | grep -o $version_regex ))
+			local major=${array[0]}
+			local minor="$((${version_array[1]} + 1))"
+			local patch="0-SNAPSHOT"
+			echo "version := $major.$minor.$patch" > $path
 		;;
 	esac
 }
@@ -50,7 +61,7 @@ update_version()
 
 ###################
 
-
+set -x
 
 # Implement your script here.
 git fetch origin $DEVELOP_BRANCH
@@ -58,7 +69,7 @@ git checkout origin/$DEVELOP
 
 build_file=$(get_build_filepath) 
 if [ $? -e 1 ]; then
-	echo "FAILURE - Cannot find eiter of build.sbt, pom.xml"
+	echo "AUTOMATIC VERSION UPDATE FAILURE - Cannot find eiter of build.sbt, pom.xml"
 	echo "Determine if project is configured correctly"
 	echo "Switching back to develop branch"
 	git checkout $DEVELOP_BRANCH
