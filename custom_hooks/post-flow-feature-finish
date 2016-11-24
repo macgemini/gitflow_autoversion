@@ -39,15 +39,15 @@ update_version()
 {
 	local bpath=$1
 	case "$bpath" in 
-		*"mvn.xml" ) 
+		*"pom.xml" ) 
 			local version=$(mvn -q -Dexec.executable="echo" -Dexec.args='${project.version}' --non-recursive org.codehaus.mojo:exec-maven-plugin:1.3.1:exec 2>/dev/null)
 			local version_regex="[0-9]\+"
-			local version_array=$(( echo $version | grep -o $version_regex ))
+			local version_array=($( echo $version | grep -o $version_regex ))
 			local major=${version_array[0]}
                         local minor=$((${version_array[1]} + 1))
                         local patch="0-SNAPSHOT"
 			local new_version=$major.$minor.$patch
-			mvn versions:set -DnewVersion=$new_version
+			local status=$(mvn versions:set -DnewVersion=$new_version)
 			echo $new_version
 		;;
 		*"version.sbt" ) 
@@ -71,8 +71,6 @@ update_version()
 set -x
 
 # Implement your script here.
-git fetch origin $DEVELOP_BRANCH
-git checkout origin/$DEVELOP
 
 version_file=$(get_version_filepath) 
 if [ $? -e 1 ]; then
@@ -82,6 +80,8 @@ if [ $? -e 1 ]; then
 	git checkout $DEVELOP_BRANCH
 	exit 1
 else 
+	git fetch origin $DEVELOP_BRANCH
+	git checkout FETCH_HEAD -- $version_file
 	new_version=$(update_version $version_file)
 	if [ $? -ne 0 ]; then
 		git checkout $DEVELOP_BRANCH
