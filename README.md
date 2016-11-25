@@ -10,7 +10,7 @@ Provides custom logic for automatic (sema)versioning of mvn and sbt projects
 6. hotfix-finish  [ ]
 
 ## Preconditions
-1. Latest bash shell version
+1. Linux with latest bash shell version
 1. Installed mvn3
 2. Projects must use version.sbt for storing version number in sbt projects
 
