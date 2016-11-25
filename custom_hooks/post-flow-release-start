@@ -1,0 +1,106 @@
+#!/bin/bash
+#
+# Runs at the end of git flow release finish
+#
+# Positional arguments:
+# $1    The version (including the version prefix)
+# $2    The origin remote
+# $3    The full branch name (including the release prefix)
+#
+VERSION=$1
+ORIGIN=$2
+BRANCH=$3
+
+get_version_filepath() 
+{
+	local sbt_path=$(find $PWD -type f -name "version.sbt")
+	local mvn_path=$(find $PWD -type f -name "pom.xml")
+	if [ "$sbt_path" != "" ]; then
+		echo $sbt_path
+		return 0
+	elif [ "$mvn_path" != "" ]; then
+		echo $mvn_path
+		return 0
+	else 
+		echo "no build file found" 
+		return 1
+	fi
+	return 0
+}
+
+update_version()
+{
+	local bpath=$1
+	case "$bpath" in 
+		*"pom.xml" ) 
+			local version=$(mvn -q -Dexec.executable="echo" -Dexec.args='${project.version}' --non-recursive org.codehaus.mojo:exec-maven-plugin:1.3.1:exec 2>/dev/null)
+			local version_regex="[0-9]\+"
+			local version_array=($( echo $version | grep -o $version_regex ))
+			local major=${version_array[0]}
+                        local minor=${version_array[1]}
+                        local patch=${version_array[2]}
+			local new_version=$major.$minor.$patch
+			local status=$(mvn versions:set -DnewVersion=$new_version)
+			echo $new_version
+		;;
+		*"version.sbt" ) 
+		        local version_regex="[0-9]\+"
+			local version_array=($( grep -o "$version_regex" "$bpath" ))
+			local major=${version_array[0]}
+			local minor=${version_array[1]}
+			local patch=${version_array[2]}
+			local new_version=$major.$minor.$patch
+			echo "version := $new_version" > $bpath
+			echo $new_version
+		;;
+	esac
+}
+
+
+
+
+###################
+
+set -x
+
+# Implement your script here.
+
+version_file=$(get_version_filepath) 
+if [ $? -e 1 ]; then
+	echo "AUTOMATIC VERSION UPDATE FAILURE - Cannot find eiter of build.sbt, pom.xml"
+	echo "Determine if project is configured correctly"
+	echo "Switching back to develop branch"
+	git checkout $DEVELOP_BRANCH
+	exit 1
+else 
+	new_version=$(update_version $version_file)
+	if [ $? -ne 0 ]; then
+		echo "AUTOMATIC VERSION UPDATE FAILURE - There was a problem with getting a version number of a project"
+		echo "Switching to develop branch"
+		git checkout $DEVELOP_BRANCH
+		exit 1
+	else
+		git add $version_file
+		git commit -m "release-finish, updated version to: $new_version"
+		git tag -a $new_version -m "release-finish, updated version to: $new_version"
+		exit 0
+	fi
+fi
+exit 0
+
+
+
+
+# Implement your script aere.
+. "$HOOKS_DIR"/gitflow-functions
+ROOTDIR=$(git rev-parse --show-toplevel)
+TMPFILE=$(mktemp --suffix=.gitflow)
+
+gitflow_set_major_minor $VERSION
+AVH_PRE_RELEASE="-rc.1"
+gitflow_build_version
+gitflow_update_version $AVH_VERSION
+
+
+# To terminate the git-flow action, return a non-zero exit code.
+exit 0
